@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pocket Beats</string>
+    <string name="search_hint">Search songs…</string>
+    <string name="no_music">No music found</string>
+    <string name="sort_title">Sort: Title</string>
+    <string name="sort_artist">Sort: Artist</string>
+    <string name="sort_album">Sort: Album</string>
+    <string name="shuffle_off">Shuffle: Off</string>
+    <string name="shuffle_on">Shuffle: On</string>
+    <string name="repeat_off">Repeat: Off</string>
+    <string name="repeat_all">Repeat: All</string>
+    <string name="repeat_one">Repeat: One</string>
+    <string name="now_playing">Now Playing</string>
+    <string name="btn_prev">Prev</string>
+    <string name="btn_play">Play</string>
+    <string name="btn_pause">Pause</string>
+    <string name="btn_next">Next</string>
+    <string name="unknown_artist">Unknown Artist</string>
+    <string name="unknown_album">Unknown Album</string>
+</resources>
