@@ -5,17 +5,39 @@
     android:orientation="vertical"
     android:background="#FF222222">
 
-    <EditText
-        android:id="@+id/searchField"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/search_hint"
-        android:textColor="@color/white"
-        android:textColorHint="@color/dark_gray"
+        android:orientation="horizontal"
         android:background="#FF333333"
-        android:padding="12dp"
-        android:singleLine="true"
-        android:inputType="text" />
+        android:gravity="center_vertical"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/searchLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/search_hint"
+            android:textColor="@color/dark_gray"
+            android:textSize="16sp"
+            android:paddingLeft="8dp" />
+
+        <Button
+            android:id="@+id/searchButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Search"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/clearButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"

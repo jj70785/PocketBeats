@@ -10,10 +10,11 @@ import android.database.Cursor;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.MediaStore;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -44,11 +45,16 @@ public class MainActivity extends Activity {
     private ListView songListView;
     private TextView songCount;
     private TextView noMusicText;
-    private EditText searchField;
+    private TextView searchLabel;
+    private Button searchButton;
+    private Button clearButton;
     private Button sortButton;
+    private String currentQuery = "";
 
     private boolean autoPlayPending = false;
     private int autoPlayIndex = -1;
+    private final Handler searchHandler = new Handler();
+    private Runnable searchRunnable;
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -80,16 +86,30 @@ public class MainActivity extends Activity {
         songListView = (ListView) findViewById(R.id.songList);
         songCount = (TextView) findViewById(R.id.songCount);
         noMusicText = (TextView) findViewById(R.id.noMusicText);
-        searchField = (EditText) findViewById(R.id.searchField);
+        searchLabel = (TextView) findViewById(R.id.searchLabel);
+        searchButton = (Button) findViewById(R.id.searchButton);
+        clearButton = (Button) findViewById(R.id.clearButton);
         sortButton = (Button) findViewById(R.id.sortButton);
 
         adapter = new SongAdapter(this, filteredSongs);
         songListView.setAdapter(adapter);
 
-        loadSongs();
-        sortSongs();
-        updateFilteredList("");
-        updateUI();
+        songCount.setText("Loading...");
+        noMusicText.setVisibility(View.GONE);
+
+        // Load songs on background thread to avoid blocking UI
+        new Thread(new Runnable() {
+            public void run() {
+                loadSongs();
+                sortSongs();
+                searchHandler.post(new Runnable() {
+                    public void run() {
+                        updateFilteredList("");
+                        updateUI();
+                    }
+                });
+            }
+        }).start();
 
         songListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -102,19 +122,26 @@ public class MainActivity extends Activity {
             }
         });
 
-        searchField.addTextChangedListener(new TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                updateFilteredList(s.toString());
+        searchButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                showSearchDialog();
             }
-            public void afterTextChanged(Editable s) {}
+        });
+
+        clearButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                currentQuery = "";
+                searchLabel.setText(R.string.search_hint);
+                clearButton.setVisibility(View.GONE);
+                updateFilteredList("");
+            }
         });
 
         sortButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 currentSort = (currentSort + 1) % 3;
                 sortSongs();
-                updateFilteredList(searchField.getText().toString());
+                updateFilteredList(currentQuery);
                 updateSortButtonText();
             }
         });
@@ -154,7 +181,9 @@ public class MainActivity extends Activity {
     private void loadSongs() {
         allSongs.clear();
         ContentResolver resolver = getContentResolver();
-        Uri musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        Uri[] uris = {
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        };
         String[] projection = {
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
@@ -162,40 +191,104 @@ public class MainActivity extends Activity {
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.DURATION
+            MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.MIME_TYPE
         };
-        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
-        Cursor cursor = null;
-        try {
-            cursor = resolver.query(musicUri, projection, selection, null, null);
-            if (cursor != null && cursor.moveToFirst()) {
-                int idCol = cursor.getColumnIndex(MediaStore.Audio.Media._ID);
-                int titleCol = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-                int artistCol = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-                int albumCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
-                int albumIdCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID);
-                int dataCol = cursor.getColumnIndex(MediaStore.Audio.Media.DATA);
-                int durationCol = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
+        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0 OR "
+                + MediaStore.Audio.Media.MIME_TYPE + " LIKE 'audio/%'";
+        java.util.HashSet<String> seenPaths = new java.util.HashSet<String>();
+        for (int u = 0; u < uris.length; u++) {
+            Cursor cursor = null;
+            try {
+                cursor = resolver.query(uris[u], projection, selection, null, null);
+                if (cursor != null && cursor.moveToFirst()) {
+                    int idCol = cursor.getColumnIndex(MediaStore.Audio.Media._ID);
+                    int titleCol = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+                    int artistCol = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
+                    int albumCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
+                    int albumIdCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID);
+                    int dataCol = cursor.getColumnIndex(MediaStore.Audio.Media.DATA);
+                    int durationCol = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
 
-                do {
-                    long id = cursor.getLong(idCol);
-                    String title = cursor.getString(titleCol);
-                    String artist = cursor.getString(artistCol);
-                    String album = cursor.getString(albumCol);
-                    long albumId = cursor.getLong(albumIdCol);
-                    String path = cursor.getString(dataCol);
-                    long duration = cursor.getLong(durationCol);
-                    allSongs.add(new Song(id, title, artist, album, albumId, path, duration));
-                } while (cursor.moveToNext());
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading songs", e);
-        } finally {
-            if (cursor != null) {
-                cursor.close();
+                    do {
+                        String path = cursor.getString(dataCol);
+                        if (path != null && !seenPaths.contains(path)) {
+                            seenPaths.add(path);
+                            long id = cursor.getLong(idCol);
+                            String title = cursor.getString(titleCol);
+                            String artist = cursor.getString(artistCol);
+                            String album = cursor.getString(albumCol);
+                            long albumId = cursor.getLong(albumIdCol);
+                            long duration = cursor.getLong(durationCol);
+                            allSongs.add(new Song(id, title, artist, album, albumId, path, duration));
+                        }
+                    } while (cursor.moveToNext());
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading songs from " + uris[u], e);
+            } finally {
+                if (cursor != null) {
+                    cursor.close();
+                }
             }
         }
         Log.i(TAG, "Loaded " + allSongs.size() + " songs from MediaStore");
+
+        // Normalize MediaStore paths for dedup (/sdcard -> /mnt/sdcard)
+        java.util.HashSet<String> knownPaths = new java.util.HashSet<String>();
+        for (int i = 0; i < allSongs.size(); i++) {
+            String p = allSongs.get(i).getPath();
+            knownPaths.add(normalizePath(p));
+        }
+
+        // Scan filesystem for audio files MediaStore missed
+        String[] scanDirs = {
+            "/mnt/emmc/Music",
+            "/mnt/sdcard/Music"
+        };
+        int fsCount = 0;
+        for (int d = 0; d < scanDirs.length; d++) {
+            java.io.File dir = new java.io.File(scanDirs[d]);
+            if (dir.exists() && dir.isDirectory()) {
+                java.io.File[] files = dir.listFiles();
+                if (files != null) {
+                    for (int f = 0; f < files.length; f++) {
+                        java.io.File file = files[f];
+                        if (!file.isFile()) continue;
+                        String filePath = file.getAbsolutePath();
+                        if (knownPaths.contains(normalizePath(filePath))) continue;
+                        String name = file.getName().toLowerCase();
+                        if (!name.endsWith(".mp3") && !name.endsWith(".m4a")
+                                && !name.endsWith(".ogg") && !name.endsWith(".wav")
+                                && !name.endsWith(".flac") && !name.endsWith(".aac")
+                                && !name.endsWith(".wma")) {
+                            continue;
+                        }
+                        knownPaths.add(normalizePath(filePath));
+                        // Use filename without extension as title
+                        String title = file.getName();
+                        int dotIdx = title.lastIndexOf('.');
+                        if (dotIdx > 0) {
+                            title = title.substring(0, dotIdx);
+                        }
+                        allSongs.add(new Song(filePath.hashCode(), title,
+                                "Unknown", "Unknown", 0, filePath, 0));
+                        fsCount++;
+                    }
+                }
+            }
+        }
+        if (fsCount > 0) {
+            Log.i(TAG, "Found " + fsCount + " additional songs from filesystem scan");
+        }
+        Log.i(TAG, "Total songs: " + allSongs.size());
+    }
+
+    private static String normalizePath(String path) {
+        if (path != null && path.startsWith("/sdcard/")) {
+            return "/mnt/sdcard/" + path.substring(8);
+        }
+        return path;
     }
 
     private void sortSongs() {
@@ -243,9 +336,41 @@ public class MainActivity extends Activity {
         }
         adapter.notifyDataSetChanged();
         updateUI();
-        if (serviceBound) {
-            musicService.setSongList(filteredSongs);
-        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void showSearchDialog() {
+        final EditText input = new EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                | android.text.InputType.TYPE_TEXT_VARIATION_FILTER);
+        input.setText(currentQuery);
+        input.setHint(R.string.search_hint);
+        input.setSingleLine(true);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Search Songs")
+                .setView(input)
+                .setPositiveButton("Search", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        currentQuery = input.getText().toString().trim();
+                        if (currentQuery.length() > 0) {
+                            searchLabel.setText(currentQuery);
+                            clearButton.setVisibility(View.VISIBLE);
+                        } else {
+                            searchLabel.setText(R.string.search_hint);
+                            clearButton.setVisibility(View.GONE);
+                        }
+                        searchHandler.postDelayed(new Runnable() {
+                            public void run() {
+                                updateFilteredList(currentQuery);
+                            }
+                        }, 300);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.show();
     }
 
     private void updateUI() {
