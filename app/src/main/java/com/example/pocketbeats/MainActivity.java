@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.media.AudioManager;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -208,6 +209,7 @@ public class MainActivity extends Activity {
             public void run() {
                 loadSongs();
                 sortSongs();
+                // Show songs immediately with filename-based titles
                 mainHandler.post(new Runnable() {
                     public void run() {
                         buildSongsByPath();
@@ -224,6 +226,17 @@ public class MainActivity extends Activity {
                         } else if (serviceBound) {
                             musicService.setSongList(filteredSongs);
                         }
+                    }
+                });
+                // Enhance metadata in background, then refresh UI
+                enhanceMetadata(allSongs);
+                sortSongs();
+                mainHandler.post(new Runnable() {
+                    public void run() {
+                        if (isFinishing()) return;
+                        buildSongsByPath();
+                        updateFilteredList(currentQuery);
+                        updateToolbarLabel();
                     }
                 });
             }
@@ -559,6 +572,7 @@ public class MainActivity extends Activity {
 
         noMusicText.setVisibility(categoryNames.isEmpty() ? View.VISIBLE : View.GONE);
         songListView.setVisibility(categoryNames.isEmpty() ? View.GONE : View.VISIBLE);
+        updateToolbarLabel();
     }
 
     private void loadAlbumsTab() {
@@ -589,6 +603,7 @@ public class MainActivity extends Activity {
 
         noMusicText.setVisibility(categoryNames.isEmpty() ? View.VISIBLE : View.GONE);
         songListView.setVisibility(categoryNames.isEmpty() ? View.GONE : View.VISIBLE);
+        updateToolbarLabel();
     }
 
     private void loadPlaylistsTab() {
@@ -627,6 +642,7 @@ public class MainActivity extends Activity {
 
         noMusicText.setVisibility(View.GONE);
         songListView.setVisibility(View.VISIBLE);
+        updateToolbarLabel();
     }
 
     // --- Sub-View ---
@@ -879,6 +895,40 @@ public class MainActivity extends Activity {
         Log.i(TAG, "Total songs: " + allSongs.size());
     }
 
+    private void enhanceMetadata(ArrayList<Song> songs) {
+        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+        for (int i = 0; i < songs.size(); i++) {
+            Song song = songs.get(i);
+            try {
+                mmr.setDataSource(song.getPath());
+
+                String title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+                song.setTitle(title);
+
+                String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+                if (artist == null || artist.length() == 0) {
+                    artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST);
+                }
+                song.setArtist(artist);
+
+                String album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM);
+                song.setAlbum(album);
+
+                String durStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                if (durStr != null) {
+                    try { song.setDuration(Long.parseLong(durStr)); }
+                    catch (NumberFormatException ignored) {}
+                }
+            } catch (Exception e) {
+                // Bad file or unsupported format — skip, keep existing values
+                // Re-create retriever since native object may be in bad state on Gingerbread
+                try { mmr.release(); } catch (Exception ignored) {}
+                mmr = new MediaMetadataRetriever();
+            }
+        }
+        try { mmr.release(); } catch (Exception ignored) {}
+    }
+
     private static String normalizePath(String path) {
         if (path != null && path.startsWith("/sdcard/")) {
             return "/mnt/sdcard/" + path.substring(8);
@@ -1015,8 +1065,13 @@ public class MainActivity extends Activity {
             searchLabel.setText(subViewSongs.size() + " songs");
         } else if (currentTab == TAB_SONGS) {
             searchLabel.setText(filteredSongs.size() + " songs");
-        } else {
-            searchLabel.setText(categoryNames.size() + " items");
+        } else if (currentTab == TAB_ARTISTS) {
+            searchLabel.setText(categoryNames.size() + " artists");
+        } else if (currentTab == TAB_ALBUMS) {
+            searchLabel.setText(categoryNames.size() + " albums");
+        } else if (currentTab == TAB_PLAYLISTS) {
+            int count = categoryNames.size() > 0 ? categoryNames.size() - 1 : 0;
+            searchLabel.setText(count + " playlists");
         }
     }
 
@@ -1104,8 +1159,12 @@ public class MainActivity extends Activity {
                     public void onClick(DialogInterface dialog, int which) {
                         String name = input.getText().toString().trim();
                         if (name.length() > 0) {
-                            playlistDb.createPlaylist(name);
-                            Toast.makeText(MainActivity.this, R.string.playlist_created, Toast.LENGTH_SHORT).show();
+                            long result = playlistDb.createPlaylist(name);
+                            if (result >= 0) {
+                                Toast.makeText(MainActivity.this, R.string.playlist_created, Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(MainActivity.this, "Cannot create playlist (storage full?)", Toast.LENGTH_LONG).show();
+                            }
                             loadPlaylistsTab();
                         }
                     }

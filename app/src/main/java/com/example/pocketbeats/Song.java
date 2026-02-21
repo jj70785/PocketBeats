@@ -28,4 +28,9 @@ public class Song implements Serializable {
     public long getAlbumId() { return albumId; }
     public String getPath() { return path; }
     public long getDuration() { return duration; }
+
+    public void setTitle(String t) { if (t != null && t.length() > 0) this.title = t; }
+    public void setArtist(String a) { if (a != null && a.length() > 0) this.artist = a; }
+    public void setAlbum(String a) { if (a != null && a.length() > 0) this.album = a; }
+    public void setDuration(long d) { if (d > 0) this.duration = d; }
 }

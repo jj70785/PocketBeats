@@ -80,9 +80,13 @@ public class PlaylistHelper {
                         try {
                             String name = input.getText().toString().trim();
                             if (name.length() > 0) {
-                                db.createPlaylist(name);
-                                db.addSongToPlaylist(name, songPath);
-                                Toast.makeText(activity, R.string.added_to_playlist, Toast.LENGTH_SHORT).show();
+                                long result = db.createPlaylist(name);
+                                if (result >= 0) {
+                                    db.addSongToPlaylist(name, songPath);
+                                    Toast.makeText(activity, R.string.added_to_playlist, Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(activity, "Cannot create playlist (storage full?)", Toast.LENGTH_LONG).show();
+                                }
                             }
                         } catch (Exception e) {
                             Log.e(TAG, "Error creating playlist", e);
