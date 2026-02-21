@@ -5,7 +5,7 @@
     <color name="divider">#FF2A2A2A</color>
     <color name="primary">#FF333333</color>
     <color name="primary_dark">#FF222222</color>
-    <color name="accent">#FF4CAF50</color>
+    <color name="accent">#FFFF6D00</color>
     <color name="white">#FFFFFFFF</color>
     <color name="light_gray">#FFE0E0E0</color>
     <color name="medium_gray">#FFAAAAAA</color>
@@ -17,8 +17,8 @@
     <color name="card_border">#FF222222</color>
     <color name="card_pressed">#FF2A2A2A</color>
     <color name="card_border_pressed">#FF333333</color>
-    <color name="accent_dark">#FF388E3C</color>
-    <color name="accent_pressed">#FF2E7D32</color>
+    <color name="accent_dark">#FFE65100</color>
+    <color name="accent_pressed">#FFBF360C</color>
     <color name="transport_pressed">#33FFFFFF</color>
     <color name="seekbar_track_bg">#FF333333</color>
 </resources>

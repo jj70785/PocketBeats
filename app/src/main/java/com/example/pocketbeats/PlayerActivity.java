@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
+import android.media.MediaPlayer;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,6 +23,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.VideoView;
 
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -44,6 +46,8 @@ public class PlayerActivity extends Activity {
     private ImageButton btnPrev;
     private ImageButton btnPlayPause;
     private ImageButton btnNext;
+    private VideoView bgVideo;
+    private ImageView bgFallback;
 
     private boolean userDragging = false;
     private Bitmap currentAlbumBitmap = null;
@@ -107,6 +111,31 @@ public class PlayerActivity extends Activity {
         btnPrev = (ImageButton) findViewById(R.id.btnPrev);
         btnPlayPause = (ImageButton) findViewById(R.id.btnPlayPause);
         btnNext = (ImageButton) findViewById(R.id.btnNext);
+
+        // Background video loop
+        bgVideo = (VideoView) findViewById(R.id.bgVideo);
+        bgFallback = (ImageView) findViewById(R.id.bgFallback);
+        try {
+            final String videoPath = "android.resource://" + getPackageName() + "/" + R.raw.bg_video;
+            bgVideo.setVideoURI(android.net.Uri.parse(videoPath));
+            bgVideo.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                public void onPrepared(MediaPlayer mp) {
+                    mp.setLooping(true);
+                    mp.setVolume(0f, 0f);
+                    bgVideo.start();
+                    bgFallback.setVisibility(View.GONE);
+                }
+            });
+            bgVideo.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.w(TAG, "Background video error, showing fallback image");
+                    bgFallback.setVisibility(View.VISIBLE);
+                    return true;
+                }
+            });
+        } catch (Exception e) {
+            Log.w(TAG, "Could not set up background video", e);
+        }
 
         // Enable marquee scrolling on title
         playerTitle.setSelected(true);
@@ -223,15 +252,38 @@ public class PlayerActivity extends Activity {
             updatePlayPauseButton(musicService.isPlaying());
             startSeekBarUpdates();
         }
+        // Resume background video
+        try {
+            if (bgVideo != null && !bgVideo.isPlaying()) {
+                bgVideo.start();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Could not resume background video", e);
+        }
     }
 
     protected void onPause() {
         super.onPause();
         stopSeekBarUpdates();
+        // Pause background video to save resources
+        try {
+            if (bgVideo != null && bgVideo.isPlaying()) {
+                bgVideo.pause();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Could not pause background video", e);
+        }
     }
 
     protected void onDestroy() {
         stopSeekBarUpdates();
+        try {
+            if (bgVideo != null) {
+                bgVideo.stopPlayback();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Could not stop background video", e);
+        }
         if (serviceBound) {
             if (musicService != null) {
                 musicService.setOnPlaybackChangedListener(null);
