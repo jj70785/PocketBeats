@@ -4,20 +4,20 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Random;
 
 public class MusicService extends Service implements
@@ -28,6 +28,8 @@ public class MusicService extends Service implements
 
     private static final String TAG = "MusicService";
     private static final int NOTIFICATION_ID = 1;
+    private static final String PREFS_NAME = "pocketbeats_prefs";
+    private static final long SAVE_INTERVAL_MS = 30000;
 
     public static final int REPEAT_OFF = 0;
     public static final int REPEAT_ALL = 1;
@@ -44,11 +46,28 @@ public class MusicService extends Service implements
     private int repeatMode = REPEAT_OFF;
     private boolean wasPlayingBeforeFocusLoss = false;
 
+    // Flag to suppress auto-play when restoring state
+    private boolean suppressAutoPlay = false;
+    private int pendingSeekPos = -1;
+
     private OnPlaybackChangedListener listener;
+    private OnMiniPlayerUpdateListener miniPlayerListener;
+
+    private Handler saveHandler = new Handler();
+    private Runnable saveRunnable = new Runnable() {
+        public void run() {
+            savePlaybackState();
+            saveHandler.postDelayed(saveRunnable, SAVE_INTERVAL_MS);
+        }
+    };
 
     public interface OnPlaybackChangedListener {
         void onSongChanged(Song song);
         void onPlayStateChanged(boolean isPlaying);
+    }
+
+    public interface OnMiniPlayerUpdateListener {
+        void onMiniPlayerUpdate();
     }
 
     public class MusicBinder extends Binder {
@@ -60,6 +79,9 @@ public class MusicService extends Service implements
     public void onCreate() {
         super.onCreate();
         initPlayer();
+        restorePlaybackState();
+        // Start periodic save
+        saveHandler.postDelayed(saveRunnable, SAVE_INTERVAL_MS);
     }
 
     private void initPlayer() {
@@ -84,6 +106,8 @@ public class MusicService extends Service implements
     }
 
     public void onDestroy() {
+        savePlaybackState();
+        saveHandler.removeCallbacks(saveRunnable);
         cancelNotification();
         if (player != null) {
             try {
@@ -101,6 +125,8 @@ public class MusicService extends Service implements
     }
 
     public void onTaskRemoved(Intent rootIntent) {
+        savePlaybackState();
+        saveHandler.removeCallbacks(saveRunnable);
         cancelNotification();
         if (player != null) {
             try {
@@ -119,6 +145,16 @@ public class MusicService extends Service implements
 
     public void setOnPlaybackChangedListener(OnPlaybackChangedListener listener) {
         this.listener = listener;
+    }
+
+    public void setOnMiniPlayerUpdateListener(OnMiniPlayerUpdateListener listener) {
+        this.miniPlayerListener = listener;
+    }
+
+    private void notifyMiniPlayer() {
+        if (miniPlayerListener != null) {
+            miniPlayerListener.onMiniPlayerUpdate();
+        }
     }
 
     public void setSongList(ArrayList<Song> songs) {
@@ -156,10 +192,8 @@ public class MusicService extends Service implements
         if (playQueue.isEmpty()) return;
 
         if (shuffleOn) {
-            // Find the song by index in the original list
             if (index >= 0 && index < songList.size()) {
                 Song target = songList.get(index);
-                // Find it in the queue
                 for (int i = 0; i < playQueue.size(); i++) {
                     if (playQueue.get(i).getId() == target.getId()) {
                         currentIndex = i;
@@ -178,6 +212,39 @@ public class MusicService extends Service implements
         playCurrent();
     }
 
+    public void playNextInQueue(Song song) {
+        if (playQueue.isEmpty()) return;
+        int insertAt = currentIndex + 1;
+        if (insertAt > playQueue.size()) {
+            insertAt = playQueue.size();
+        }
+        playQueue.add(insertAt, song);
+    }
+
+    public void prepareWithoutPlaying(int index, int seekPos) {
+        if (playQueue.isEmpty()) return;
+        if (index < 0 || index >= playQueue.size()) {
+            index = 0;
+        }
+        currentIndex = index;
+        suppressAutoPlay = true;
+        pendingSeekPos = seekPos;
+
+        isPrepared = false;
+        Song song = playQueue.get(currentIndex);
+
+        try {
+            player.reset();
+            Uri uri = Uri.parse(song.getPath());
+            player.setDataSource(getApplicationContext(), uri);
+            player.prepareAsync();
+        } catch (Exception e) {
+            Log.e(TAG, "Error preparing without playing: " + song.getPath(), e);
+            suppressAutoPlay = false;
+            pendingSeekPos = -1;
+        }
+    }
+
     private void playCurrent() {
         if (playQueue.isEmpty()) return;
         if (currentIndex < 0 || currentIndex >= playQueue.size()) {
@@ -194,21 +261,42 @@ public class MusicService extends Service implements
             player.prepareAsync();
         } catch (Exception e) {
             Log.e(TAG, "Error setting data source for: " + song.getPath(), e);
-            // Try next song
             playNext();
         }
     }
 
     public void onPrepared(MediaPlayer mp) {
         isPrepared = true;
+        Song song = playQueue.get(currentIndex);
+
+        if (suppressAutoPlay) {
+            suppressAutoPlay = false;
+            if (pendingSeekPos > 0) {
+                try {
+                    mp.seekTo(pendingSeekPos);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error seeking on restore", e);
+                }
+                pendingSeekPos = -1;
+            }
+            // Notify listeners but don't start playback
+            if (listener != null) {
+                listener.onSongChanged(song);
+                listener.onPlayStateChanged(false);
+            }
+            notifyMiniPlayer();
+            return;
+        }
+
         requestAudioFocus();
         mp.start();
-        Song song = playQueue.get(currentIndex);
         showNotification(song);
         if (listener != null) {
             listener.onSongChanged(song);
             listener.onPlayStateChanged(true);
         }
+        notifyMiniPlayer();
+        savePlaybackState();
     }
 
     public void onCompletion(MediaPlayer mp) {
@@ -224,12 +312,12 @@ public class MusicService extends Service implements
             currentIndex = 0;
             playCurrent();
         } else {
-            // Reached end, no repeat
             isPrepared = false;
             cancelNotification();
             if (listener != null) {
                 listener.onPlayStateChanged(false);
             }
+            notifyMiniPlayer();
         }
     }
 
@@ -253,6 +341,7 @@ public class MusicService extends Service implements
                 if (listener != null) {
                     listener.onPlayStateChanged(false);
                 }
+                savePlaybackState();
             } else {
                 player.start();
                 Song song = getCurrentSong();
@@ -263,6 +352,7 @@ public class MusicService extends Service implements
                     listener.onPlayStateChanged(true);
                 }
             }
+            notifyMiniPlayer();
         } catch (Exception e) {
             Log.e(TAG, "Error toggling play/pause", e);
         }
@@ -282,7 +372,6 @@ public class MusicService extends Service implements
 
     public void playPrev() {
         if (playQueue.isEmpty()) return;
-        // If more than 3 seconds in, restart current song
         if (isPrepared) {
             try {
                 if (player.getCurrentPosition() > 3000) {
@@ -368,7 +457,6 @@ public class MusicService extends Service implements
         shuffleOn = !shuffleOn;
         Song current = getCurrentSong();
         buildQueue();
-        // Re-find current song in new queue
         if (current != null) {
             for (int i = 0; i < playQueue.size(); i++) {
                 if (playQueue.get(i).getId() == current.getId()) {
@@ -377,6 +465,7 @@ public class MusicService extends Service implements
                 }
             }
         }
+        savePlaybackState();
     }
 
     public int getRepeatMode() {
@@ -385,6 +474,69 @@ public class MusicService extends Service implements
 
     public void cycleRepeatMode() {
         repeatMode = (repeatMode + 1) % 3;
+        savePlaybackState();
+    }
+
+    public void setShuffleOn(boolean on) {
+        if (shuffleOn != on) {
+            toggleShuffle();
+        }
+    }
+
+    // --- Playback State Persistence ---
+
+    private void savePlaybackState() {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+
+            Song current = getCurrentSong();
+            if (current != null) {
+                editor.putString("last_song_path", current.getPath());
+                int pos = 0;
+                if (isPrepared) {
+                    try {
+                        pos = player.getCurrentPosition();
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
+                editor.putInt("last_position", pos);
+            }
+            editor.putBoolean("shuffle_on", shuffleOn);
+            editor.putInt("repeat_mode", repeatMode);
+            editor.commit();
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving playback state", e);
+        }
+    }
+
+    private void restorePlaybackState() {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            shuffleOn = prefs.getBoolean("shuffle_on", false);
+            repeatMode = prefs.getInt("repeat_mode", REPEAT_OFF);
+        } catch (Exception e) {
+            Log.e(TAG, "Error restoring playback state", e);
+        }
+    }
+
+    public String getLastSongPath() {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            return prefs.getString("last_song_path", null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public int getLastPosition() {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            return prefs.getInt("last_position", 0);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     // Audio focus
@@ -410,6 +562,7 @@ public class MusicService extends Service implements
                         if (listener != null) {
                             listener.onPlayStateChanged(false);
                         }
+                        notifyMiniPlayer();
                     } catch (Exception e) {
                         Log.e(TAG, "Error pausing on focus loss", e);
                     }
@@ -426,6 +579,7 @@ public class MusicService extends Service implements
                         if (listener != null) {
                             listener.onPlayStateChanged(true);
                         }
+                        notifyMiniPlayer();
                     } catch (Exception e) {
                         Log.e(TAG, "Error resuming on focus gain", e);
                     }
@@ -433,7 +587,6 @@ public class MusicService extends Service implements
                 wasPlayingBeforeFocusLoss = false;
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                // Lower volume
                 if (isPrepared && isPlaying()) {
                     try {
                         player.setVolume(0.3f, 0.3f);

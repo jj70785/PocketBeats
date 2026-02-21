@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="background_primary">#FF000000</color>
+    <color name="background_elevated">#FF1A1A1A</color>
+    <color name="divider">#FF2A2A2A</color>
     <color name="primary">#FF333333</color>
     <color name="primary_dark">#FF222222</color>
     <color name="accent">#FF4CAF50</color>
     <color name="white">#FFFFFFFF</color>
     <color name="light_gray">#FFE0E0E0</color>
+    <color name="medium_gray">#FFAAAAAA</color>
     <color name="dark_gray">#FF666666</color>
     <color name="placeholder_bg">#FF888888</color>
 </resources>

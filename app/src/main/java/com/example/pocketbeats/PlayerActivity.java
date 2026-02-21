@@ -15,8 +15,10 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -39,11 +41,9 @@ public class PlayerActivity extends Activity {
     private SeekBar seekBar;
     private TextView timeElapsed;
     private TextView timeTotal;
-    private Button btnPrev;
-    private Button btnPlayPause;
-    private Button btnNext;
-    private Button btnShuffle;
-    private Button btnRepeat;
+    private ImageButton btnPrev;
+    private ImageButton btnPlayPause;
+    private ImageButton btnNext;
 
     private boolean userDragging = false;
     private Bitmap currentAlbumBitmap = null;
@@ -80,14 +80,11 @@ public class PlayerActivity extends Activity {
                     updatePlayPauseButton(isPlaying);
                 }
             });
-            // Update UI with current state
             Song current = musicService.getCurrentSong();
             if (current != null) {
                 updateSongInfo(current);
             }
             updatePlayPauseButton(musicService.isPlaying());
-            updateShuffleButton();
-            updateRepeatButton();
             startSeekBarUpdates();
         }
 
@@ -107,11 +104,12 @@ public class PlayerActivity extends Activity {
         seekBar = (SeekBar) findViewById(R.id.seekBar);
         timeElapsed = (TextView) findViewById(R.id.timeElapsed);
         timeTotal = (TextView) findViewById(R.id.timeTotal);
-        btnPrev = (Button) findViewById(R.id.btnPrev);
-        btnPlayPause = (Button) findViewById(R.id.btnPlayPause);
-        btnNext = (Button) findViewById(R.id.btnNext);
-        btnShuffle = (Button) findViewById(R.id.btnShuffle);
-        btnRepeat = (Button) findViewById(R.id.btnRepeat);
+        btnPrev = (ImageButton) findViewById(R.id.btnPrev);
+        btnPlayPause = (ImageButton) findViewById(R.id.btnPlayPause);
+        btnNext = (ImageButton) findViewById(R.id.btnNext);
+
+        // Enable marquee scrolling on title
+        playerTitle.setSelected(true);
 
         btnPlayPause.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -137,24 +135,6 @@ public class PlayerActivity extends Activity {
             }
         });
 
-        btnShuffle.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (serviceBound) {
-                    musicService.toggleShuffle();
-                    updateShuffleButton();
-                }
-            }
-        });
-
-        btnRepeat.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (serviceBound) {
-                    musicService.cycleRepeatMode();
-                    updateRepeatButton();
-                }
-            }
-        });
-
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
                 if (fromUser && serviceBound) {
@@ -174,9 +154,63 @@ public class PlayerActivity extends Activity {
             }
         });
 
-        // Bind to service
         Intent serviceIntent = new Intent(this, MusicService.class);
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_player, menu);
+        return true;
+    }
+
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if (serviceBound) {
+            MenuItem shuffleItem = menu.findItem(R.id.menu_shuffle);
+            if (musicService.isShuffleOn()) {
+                shuffleItem.setTitle("Shuffle: On");
+            } else {
+                shuffleItem.setTitle("Shuffle: Off");
+            }
+
+            MenuItem repeatItem = menu.findItem(R.id.menu_repeat);
+            int mode = musicService.getRepeatMode();
+            switch (mode) {
+                case MusicService.REPEAT_OFF:
+                    repeatItem.setTitle("Repeat: Off");
+                    break;
+                case MusicService.REPEAT_ALL:
+                    repeatItem.setTitle("Repeat: All");
+                    break;
+                case MusicService.REPEAT_ONE:
+                    repeatItem.setTitle("Repeat: One");
+                    break;
+            }
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.menu_shuffle) {
+            if (serviceBound) {
+                musicService.toggleShuffle();
+            }
+            return true;
+        } else if (id == R.id.menu_repeat) {
+            if (serviceBound) {
+                musicService.cycleRepeatMode();
+            }
+            return true;
+        } else if (id == R.id.menu_add_to_playlist) {
+            if (serviceBound) {
+                Song current = musicService.getCurrentSong();
+                if (current != null) {
+                    PlaylistHelper.showAddToPlaylistDialog(this, current.getPath());
+                }
+            }
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     protected void onResume() {
@@ -187,8 +221,6 @@ public class PlayerActivity extends Activity {
                 updateSongInfo(current);
             }
             updatePlayPauseButton(musicService.isPlaying());
-            updateShuffleButton();
-            updateRepeatButton();
             startSeekBarUpdates();
         }
     }
@@ -231,37 +263,12 @@ public class PlayerActivity extends Activity {
         runOnUiThread(new Runnable() {
             public void run() {
                 if (isPlaying) {
-                    btnPlayPause.setText(R.string.btn_pause);
+                    btnPlayPause.setImageResource(R.drawable.ic_pause);
                 } else {
-                    btnPlayPause.setText(R.string.btn_play);
+                    btnPlayPause.setImageResource(R.drawable.ic_play);
                 }
             }
         });
-    }
-
-    private void updateShuffleButton() {
-        if (!serviceBound) return;
-        if (musicService.isShuffleOn()) {
-            btnShuffle.setText(R.string.shuffle_on);
-        } else {
-            btnShuffle.setText(R.string.shuffle_off);
-        }
-    }
-
-    private void updateRepeatButton() {
-        if (!serviceBound) return;
-        int mode = musicService.getRepeatMode();
-        switch (mode) {
-            case MusicService.REPEAT_OFF:
-                btnRepeat.setText(R.string.repeat_off);
-                break;
-            case MusicService.REPEAT_ALL:
-                btnRepeat.setText(R.string.repeat_all);
-                break;
-            case MusicService.REPEAT_ONE:
-                btnRepeat.setText(R.string.repeat_one);
-                break;
-        }
     }
 
     private void loadAlbumArt(long albumId) {
@@ -272,14 +279,12 @@ public class PlayerActivity extends Activity {
                     Uri.parse("content://media/external/audio/albumart"), albumId);
             InputStream is = getContentResolver().openInputStream(albumArtUri);
             if (is != null) {
-                // First pass: get dimensions
                 BitmapFactory.Options opts = new BitmapFactory.Options();
                 opts.inJustDecodeBounds = true;
                 BitmapFactory.decodeStream(is, null, opts);
                 is.close();
 
-                // Calculate inSampleSize
-                int size = 300;
+                int size = 480;
                 int inSampleSize = 1;
                 if (opts.outHeight > size || opts.outWidth > size) {
                     int halfH = opts.outHeight / 2;
@@ -289,7 +294,6 @@ public class PlayerActivity extends Activity {
                     }
                 }
 
-                // Second pass: decode
                 is = getContentResolver().openInputStream(albumArtUri);
                 if (is != null) {
                     BitmapFactory.Options opts2 = new BitmapFactory.Options();
@@ -304,7 +308,6 @@ public class PlayerActivity extends Activity {
                 }
             }
         } catch (Exception e) {
-            // No album art found, use placeholder
             Log.d(TAG, "No album art for albumId=" + albumId);
         }
 

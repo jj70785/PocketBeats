@@ -3,82 +3,236 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FF222222">
+    android:background="@color/background_primary">
 
+    <!-- Tab bar -->
     <LinearLayout
+        android:id="@+id/tabBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="#FF333333"
+        android:background="@color/background_elevated"
+        android:paddingTop="4dp"
+        android:paddingBottom="0dp">
+
+        <TextView
+            android:id="@+id/tabSongs"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/tab_songs"
+            android:textColor="@color/accent"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:padding="10dp" />
+
+        <TextView
+            android:id="@+id/tabArtists"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/tab_artists"
+            android:textColor="@color/medium_gray"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:padding="10dp" />
+
+        <TextView
+            android:id="@+id/tabAlbums"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/tab_albums"
+            android:textColor="@color/medium_gray"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:padding="10dp" />
+
+        <TextView
+            android:id="@+id/tabPlaylists"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/tab_playlists"
+            android:textColor="@color/medium_gray"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:padding="10dp" />
+    </LinearLayout>
+
+    <!-- Tab indicator line -->
+    <LinearLayout
+        android:id="@+id/tabIndicatorContainer"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:orientation="horizontal"
+        android:background="@color/background_elevated">
+
+        <View
+            android:id="@+id/tabIndicator"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@color/accent" />
+
+        <View
+            android:id="@+id/tabIndicatorSpacer"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="3"
+            android:background="@android:color/transparent" />
+    </LinearLayout>
+
+    <!-- Compact toolbar: search icon | search label/count | sort button -->
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:orientation="horizontal"
+        android:background="@color/background_elevated"
         android:gravity="center_vertical"
-        android:padding="4dp">
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp">
+
+        <ImageButton
+            android:id="@+id/searchButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_search"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:contentDescription="Search" />
 
         <TextView
             android:id="@+id/searchLabel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/search_hint"
-            android:textColor="@color/dark_gray"
-            android:textSize="16sp"
-            android:paddingLeft="8dp" />
-
-        <Button
-            android:id="@+id/searchButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Search"
-            android:textSize="12sp" />
-
-        <Button
-            android:id="@+id/clearButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Clear"
-            android:textSize="12sp"
-            android:visibility="gone" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:gravity="center_vertical">
-
-        <TextView
-            android:id="@+id/songCount"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/light_gray"
+            android:text="0 songs"
+            android:textColor="@color/medium_gray"
             android:textSize="14sp"
-            android:text="0 songs" />
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:paddingLeft="6dp"
+            android:paddingRight="6dp" />
+
+        <ImageButton
+            android:id="@+id/clearButton"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_clear"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:visibility="gone"
+            android:contentDescription="Clear search" />
 
         <Button
             android:id="@+id/sortButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:text="@string/sort_title"
-            android:textSize="12sp" />
+            android:textSize="11sp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp" />
     </LinearLayout>
 
+    <!-- Sub-view header (Play All / Shuffle All + back context) -->
+    <LinearLayout
+        android:id="@+id/subViewHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:background="@color/background_primary">
+
+        <TextView
+            android:id="@+id/subViewTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <Button
+            android:id="@+id/btnPlayAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/play_all"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnShuffleAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/shuffle_all"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Empty state -->
     <TextView
         android:id="@+id/noMusicText"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:text="@string/no_music"
         android:textColor="@color/light_gray"
         android:textSize="18sp"
         android:gravity="center"
         android:visibility="gone" />
 
+    <!-- Song/Category list (takes remaining height) -->
     <ListView
         android:id="@+id/songList"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="#FF444444"
-        android:dividerHeight="1dp" />
+        android:divider="@color/divider"
+        android:dividerHeight="1dp"
+        android:cacheColorHint="@color/background_primary" />
+
+    <!-- Mini-player bar -->
+    <LinearLayout
+        android:id="@+id/miniPlayerBar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="@color/background_elevated"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/miniAlbumArt"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_default_album"
+            android:contentDescription="Album Art" />
+
+        <TextView
+            android:id="@+id/miniSongTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp" />
+
+        <ImageButton
+            android:id="@+id/miniPlayPause"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_play"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:contentDescription="@string/btn_play" />
+    </LinearLayout>
 
 </LinearLayout>
