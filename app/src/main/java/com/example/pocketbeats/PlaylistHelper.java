@@ -67,7 +67,8 @@ public class PlaylistHelper {
                                                 final PlaylistDbHelper db) {
         final EditText input = new EditText(activity);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
-                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                | android.text.InputType.TYPE_TEXT_VARIATION_FILTER);
         input.setHint(R.string.playlist_name_hint);
         input.setSingleLine(true);
 

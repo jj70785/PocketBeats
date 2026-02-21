@@ -1092,7 +1092,8 @@ public class MainActivity extends Activity {
         }
         final EditText input = new EditText(this);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
-                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                | android.text.InputType.TYPE_TEXT_VARIATION_FILTER);
         input.setHint(R.string.playlist_name_hint);
         input.setSingleLine(true);
 
@@ -1117,7 +1118,8 @@ public class MainActivity extends Activity {
         if (playlistDb == null) return;
         final EditText input = new EditText(this);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
-                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                | android.text.InputType.TYPE_TEXT_VARIATION_FILTER);
         input.setText(oldName);
         input.setSingleLine(true);
 
