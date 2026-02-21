@@ -11,4 +11,14 @@
     <color name="medium_gray">#FFAAAAAA</color>
     <color name="dark_gray">#FF666666</color>
     <color name="placeholder_bg">#FF888888</color>
+
+    <!-- Visual polish colors -->
+    <color name="card_bg">#FF141414</color>
+    <color name="card_border">#FF222222</color>
+    <color name="card_pressed">#FF2A2A2A</color>
+    <color name="card_border_pressed">#FF333333</color>
+    <color name="accent_dark">#FF388E3C</color>
+    <color name="accent_pressed">#FF2E7D32</color>
+    <color name="transport_pressed">#33FFFFFF</color>
+    <color name="seekbar_track_bg">#FF333333</color>
 </resources>

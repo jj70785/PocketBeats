@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="card_corner_radius">6dp</dimen>
+    <dimen name="card_border_width">1dp</dimen>
+    <dimen name="card_padding">8dp</dimen>
+    <dimen name="mini_player_corner_radius">8dp</dimen>
+    <dimen name="button_corner_radius">16dp</dimen>
+    <dimen name="tab_indicator_height">3dp</dimen>
+    <dimen name="tab_indicator_corner_radius">2dp</dimen>
+    <dimen name="seekbar_track_height">3dp</dimen>
+    <dimen name="seekbar_thumb_radius">7dp</dimen>
+    <dimen name="seekbar_thumb_radius_pressed">9dp</dimen>
+    <dimen name="toolbar_divider_height">1dp</dimen>
+</resources>

@@ -64,7 +64,7 @@
     <LinearLayout
         android:id="@+id/tabIndicatorContainer"
         android:layout_width="match_parent"
-        android:layout_height="2dp"
+        android:layout_height="@dimen/tab_indicator_height"
         android:orientation="horizontal"
         android:background="@color/background_elevated">
 
@@ -73,7 +73,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@color/accent" />
+            android:background="@drawable/bg_tab_indicator" />
 
         <View
             android:id="@+id/tabIndicatorSpacer"
@@ -89,7 +89,7 @@
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:orientation="horizontal"
-        android:background="@color/background_elevated"
+        android:background="@drawable/bg_toolbar"
         android:gravity="center_vertical"
         android:paddingLeft="4dp"
         android:paddingRight="4dp">
@@ -99,7 +99,7 @@
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:src="@drawable/ic_search"
-            android:background="@android:color/transparent"
+            android:background="@drawable/bg_icon_button"
             android:scaleType="centerInside"
             android:contentDescription="Search" />
 
@@ -121,7 +121,7 @@
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:src="@drawable/ic_clear"
-            android:background="@android:color/transparent"
+            android:background="@drawable/bg_icon_button"
             android:scaleType="centerInside"
             android:visibility="gone"
             android:contentDescription="Clear search" />
@@ -131,9 +131,11 @@
             android:layout_width="wrap_content"
             android:layout_height="32dp"
             android:text="@string/sort_title"
+            android:textColor="@color/accent"
             android:textSize="11sp"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp" />
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:background="@drawable/selector_sort_button" />
     </LinearLayout>
 
     <!-- Sub-view header (Play All / Shuffle All + back context) -->
@@ -160,16 +162,25 @@
         <Button
             android:id="@+id/btnPlayAll"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:text="@string/play_all"
-            android:textSize="11sp" />
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:layout_marginRight="4dp"
+            android:background="@drawable/bg_action_button" />
 
         <Button
             android:id="@+id/btnShuffleAll"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:text="@string/shuffle_all"
-            android:textSize="11sp" />
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:background="@drawable/bg_action_button" />
     </LinearLayout>
 
     <!-- Empty state -->
@@ -190,8 +201,13 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="@color/divider"
-        android:dividerHeight="1dp"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="4dp"
+        android:listSelector="@android:color/transparent"
+        android:paddingLeft="6dp"
+        android:paddingRight="6dp"
+        android:paddingTop="4dp"
+        android:clipToPadding="false"
         android:cacheColorHint="@color/background_primary" />
 
     <!-- Mini-player bar -->
@@ -200,7 +216,9 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:orientation="horizontal"
-        android:background="@color/background_elevated"
+        android:background="@drawable/selector_mini_player"
+        android:clickable="true"
+        android:focusable="true"
         android:gravity="center_vertical"
         android:padding="8dp"
         android:visibility="gone">
@@ -230,7 +248,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:src="@drawable/ic_play"
-            android:background="@android:color/transparent"
+            android:background="@drawable/bg_mini_play_button"
             android:scaleType="centerInside"
             android:contentDescription="@string/btn_play" />
     </LinearLayout>

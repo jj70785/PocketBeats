@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Green accent line on top -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/accent_dark" />
+            <corners
+                android:topLeftRadius="@dimen/mini_player_corner_radius"
+                android:topRightRadius="@dimen/mini_player_corner_radius"
+                android:bottomLeftRadius="0dp"
+                android:bottomRightRadius="0dp" />
+        </shape>
+    </item>
+    <!-- Pressed background -->
+    <item android:top="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/card_pressed" />
+        </shape>
+    </item>
+</layer-list>

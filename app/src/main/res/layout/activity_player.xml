@@ -49,76 +49,88 @@
         android:layout_marginRight="16dp"
         android:text="" />
 
+    <!-- Gradient wrapper behind controls -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginTop="16dp"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp">
+        android:orientation="vertical"
+        android:background="@drawable/bg_player_controls">
 
-        <TextView
-            android:id="@+id/timeElapsed"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/medium_gray"
-            android:textSize="12sp"
-            android:text="0:00" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="16dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp">
 
-        <SeekBar
-            android:id="@+id/seekBar"
-            android:layout_width="0dp"
+            <TextView
+                android:id="@+id/timeElapsed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/medium_gray"
+                android:textSize="12sp"
+                android:text="0:00" />
+
+            <SeekBar
+                android:id="@+id/seekBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:progressDrawable="@drawable/bg_seekbar_track"
+                android:thumb="@drawable/bg_seekbar_thumb" />
+
+            <TextView
+                android:id="@+id/timeTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/medium_gray"
+                android:textSize="12sp"
+                android:text="0:00" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp">
 
-        <TextView
-            android:id="@+id/timeTotal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/medium_gray"
-            android:textSize="12sp"
-            android:text="0:00" />
-    </LinearLayout>
+            <ImageButton
+                android:id="@+id/btnPrev"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:src="@drawable/ic_prev"
+                android:background="@drawable/bg_transport_button"
+                android:scaleType="centerInside"
+                android:contentDescription="@string/btn_prev" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="24dp">
+            <ImageButton
+                android:id="@+id/btnPlayPause"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:src="@drawable/ic_play"
+                android:background="@drawable/bg_play_button"
+                android:scaleType="centerInside"
+                android:padding="16dp"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"
+                android:contentDescription="@string/btn_play" />
 
-        <ImageButton
-            android:id="@+id/btnPrev"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/ic_prev"
-            android:background="@android:color/transparent"
-            android:scaleType="centerInside"
-            android:contentDescription="@string/btn_prev" />
+            <ImageButton
+                android:id="@+id/btnNext"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:src="@drawable/ic_next"
+                android:background="@drawable/bg_transport_button"
+                android:scaleType="centerInside"
+                android:contentDescription="@string/btn_next" />
+        </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/btnPlayPause"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:src="@drawable/ic_play"
-            android:background="@android:color/transparent"
-            android:scaleType="centerInside"
-            android:layout_marginLeft="24dp"
-            android:layout_marginRight="24dp"
-            android:contentDescription="@string/btn_play" />
-
-        <ImageButton
-            android:id="@+id/btnNext"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/ic_next"
-            android:background="@android:color/transparent"
-            android:scaleType="centerInside"
-            android:contentDescription="@string/btn_next" />
     </LinearLayout>
 
 </LinearLayout>
